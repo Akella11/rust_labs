@@ -1,0 +1,90 @@
+use std::io::{self, Write};
+
+fn main() {
+    let mut memory: Option<f64> = None;
+
+    loop {
+        println!("\n--- Програмний калькулятор ---");
+        println!("1. Додавання");
+        println!("2. Віднімання");
+        println!("3. Множення");
+        println!("4. Ділення");
+        println!("5. Очистити пам'ять");
+        println!("6. Вихід");
+
+        print!("Оберіть операцію (1-6): ");
+        io::stdout().flush().unwrap();
+
+        let mut choice = String::new();
+        io::stdin().read_line(&mut choice).unwrap();
+
+        match choice.trim() {
+            "1" => memory = perform_operation(memory, '+'),
+            "2" => memory = perform_operation(memory, '-'),
+            "3" => memory = perform_operation(memory, '*'),
+            "4" => memory = perform_operation(memory, '/'),
+            "5" => memory = None,
+            "6" => {
+                println!("Вихід...");
+                break;
+            },
+            _ => println!("Невірний вибір, спробуйте ще раз."),
+        }
+    }
+}
+
+fn perform_operation(mut memory: Option<f64>, operator: char) -> Option<f64> {
+    let first_number = match memory {
+        Some(num) => {
+            println!("Перше число: {}", num);
+            num
+        }
+        None => match get_number_from_user("Введіть перше число") {
+            Some(num) => num,
+            None => return memory,
+        },
+    };
+
+    let second_number = match get_number_from_user("Введіть друге число") {
+        Some(num) => num,
+        None => return memory,
+    };
+
+    let result = match operator {
+        '+' => first_number + second_number,
+        '-' => first_number - second_number,
+        '*' => first_number * second_number,
+        '/' => {
+            if second_number == 0.0 {
+                println!("Помилка: ділення на нуль не дозволено.");
+                return memory;
+            } else {
+                let result = first_number / second_number;
+                println!("Результат операції: {:.5}", result);
+                result
+            }
+        }
+        _ => unreachable!(),
+    };
+
+    if operator != '/' {
+        println!("Результат операції: {}", result);
+    }
+    Some(result)
+}
+
+fn get_number_from_user(prompt: &str) -> Option<f64> {
+    print!("{}: ", prompt);
+    io::stdout().flush().unwrap();
+
+    let mut input = String::new();
+    io::stdin().read_line(&mut input).unwrap();
+
+    match input.trim().parse::<f64>() {
+        Ok(num) => Some(num),
+        Err(_) => {
+            println!("Помилка: введено некоректне число.");
+            None
+        }
+    }
+}
