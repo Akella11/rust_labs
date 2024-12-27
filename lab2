@@ -1,4 +1,5 @@
 use std::io::{self, Write};
+use std::collections::VecDeque;
 
 fn main() {
     let mut memory: Option<f64> = None;
@@ -9,10 +10,11 @@ fn main() {
         println!("2. Віднімання");
         println!("3. Множення");
         println!("4. Ділення");
-        println!("5. Очистити пам'ять");
-        println!("6. Вихід");
+        println!("5. Обчислення виразу у зворотній польській нотації");
+        println!("6. Очистити пам'ять");
+        println!("7. Вихід");
 
-        print!("Оберіть операцію (1-6): ");
+        print!("Оберіть операцію (1-7): ");
         io::stdout().flush().unwrap();
 
         let mut choice = String::new();
@@ -23,8 +25,9 @@ fn main() {
             "2" => memory = perform_operation(memory, '-'),
             "3" => memory = perform_operation(memory, '*'),
             "4" => memory = perform_operation(memory, '/'),
-            "5" => memory = None,
-            "6" => {
+            "5" => memory = calculate_rpn(),
+            "6" => memory = None,
+            "7" => {
                 println!("Вихід...");
                 break;
             },
@@ -33,7 +36,7 @@ fn main() {
     }
 }
 
-fn perform_operation(mut memory: Option<f64>, operator: char) -> Option<f64> {
+fn perform_operation(memory: Option<f64>, operator: char) -> Option<f64> {
     let first_number = match memory {
         Some(num) => {
             println!("Перше число: {}", num);
@@ -88,3 +91,54 @@ fn get_number_from_user(prompt: &str) -> Option<f64> {
         }
     }
 }
+
+fn calculate_rpn() -> Option<f64> {
+    println!("Введіть вираз у зворотній польській нотації (наприклад, '3 4 + 2 *'):");
+    let mut input = String::new();
+    io::stdin().read_line(&mut input).unwrap();
+
+    let tokens: Vec<&str> = input.trim().split_whitespace().collect();
+    let mut stack: VecDeque<f64> = VecDeque::new();
+
+    for token in tokens {
+        if let Ok(num) = token.parse::<f64>() {
+            stack.push_back(num);
+        } else {
+            let b = stack.pop_back();
+            let a = stack.pop_back();
+
+            if let (Some(a), Some(b)) = (a, b) {
+                let result = match token {
+                    "+" => a + b,
+                    "-" => a - b,
+                    "*" => a * b,
+                    "/" => {
+                        if b == 0.0 {
+                            println!("Помилка: ділення на нуль не дозволено.");
+                            return None;
+                        }
+                        a / b
+                    },
+                    _ => {
+                        println!("Помилка: невідома операція '{}'.", token);
+                        return None;
+                    }
+                };
+                stack.push_back(result);
+            } else {
+                println!("Помилка: недостатньо операндів для операції '{}'.", token);
+                return None;
+            }
+        }
+    }
+
+    if stack.len() == 1 {
+        let result = stack.pop_back().unwrap();
+        println!("Результат виразу: {:.5}", result);
+        Some(result)
+    } else {
+        println!("Помилка: некоректний вираз.");
+        None
+    }
+}
+
